@@ -334,6 +334,11 @@ def load_onnx_model(
         if intermediate_generated_files is not None:
             intermediate_generated_files.append(ir_version_onnx_path)
 
+    # Ensure nodes are topologically sorted
+    graph = gs.import_onnx(onnx_model)
+    graph.cleanup().toposort()
+    onnx_model = gs.export_onnx(graph)
+
     # Check that the model is valid
     onnx.checker.check_model(onnx_model)
 
