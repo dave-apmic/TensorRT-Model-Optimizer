@@ -1,6 +1,13 @@
 Model Optimizer Changelog (Linux)
 =================================
 
+0.40 (2025-12-xx)
+^^^^^^^^^^^^^^^^^
+
+**New Features**
+
+- Add support for PyTorch Geometric quantization.
+
 0.39 (2025-11-07)
 ^^^^^^^^^^^^^^^^^
 
