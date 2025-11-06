@@ -12,8 +12,8 @@ import torch
 from . import SparseAttentionMethod, register_sparse_method
 
 
-@register_sparse_method("flash_softmax_skip")
-class FlashSoftmaxSkipMethod(SparseAttentionMethod):
+@register_sparse_method("flash_skip_softmax")
+class FlashSkipSoftmax(SparseAttentionMethod):
     """Flash Attention-aware softmax skip sparse attention method.
 
     Implements row-level block-wise sparsity aligned with Flash Attention's
@@ -25,20 +25,20 @@ class FlashSoftmaxSkipMethod(SparseAttentionMethod):
 
         Args:
             method_config: Configuration dict with threshold, br, bc, is_causal, etc.
+                          All required fields should have defaults from SparseAttentionAttributeConfig.
         """
         config = method_config or {}
 
-        # Extract configuration
-        self.threshold_config = config.get("threshold", 1e-4)
-        self.br = config.get("br", 128)
-        self.bc = config.get("bc", 128)
+        # Extract configuration (defaults handled by Pydantic)
+        self.threshold_config = config["threshold"]
+        self.br = config["br"]
+        self.bc = config["bc"]
+        self.backend = config["backend"]
+        self.is_causal = config["is_causal"]
+
+        # Optional parameters not in Pydantic config
         self.enable_correction_factor = config.get("enable_correction_factor", True)
-        self.collect_stats = config.get("collect_stats", True)
         self.phase = config.get("phase", None)
-        self.backend = config.get("backend", "pytorch")
-        self.is_causal = config.get("is_causal", True)
-        # Calibration mode: when True, prevent threshold updates to preserve calibrator's test threshold
-        self._calibration_mode = False
 
         # Initialize threshold
         if isinstance(self.threshold_config, dict):
@@ -54,10 +54,6 @@ class FlashSoftmaxSkipMethod(SparseAttentionMethod):
             self.threshold = self.threshold_config.get(
                 phase, self.threshold_config.get("default", self.threshold)
             )
-
-    def set_calibration_mode(self, enabled: bool):
-        """Set calibration mode to prevent _update_threshold from modifying the threshold."""
-        self._calibration_mode = enabled
 
     def _infer_phase(self, attention_scores: torch.Tensor) -> str:
         """Infer phase from attention scores shape."""
@@ -267,9 +263,8 @@ class FlashSoftmaxSkipMethod(SparseAttentionMethod):
         # Infer phase from tensor shape
         phase = self._infer_phase(attention_scores)
 
-        # Update threshold for the detected phase (skip during calibration)
-        if not self._calibration_mode:
-            self._update_threshold(phase)
+        # Update threshold for the detected phase
+        self._update_threshold(phase)
 
         # Apply block-wise sparsity
         sparse_mask, stats = self.calc_correction_factor_and_p(attention_scores, phase)
@@ -286,4 +281,4 @@ class FlashSoftmaxSkipMethod(SparseAttentionMethod):
     @property
     def name(self) -> str:
         """Method identifier."""
-        return "flash_softmax_skip"
+        return "flash_skip_softmax"

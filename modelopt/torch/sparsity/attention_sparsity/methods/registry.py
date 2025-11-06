@@ -99,8 +99,8 @@ def get_sparse_method(name: str, version: str | None = None) -> type[SparseAtten
         ValueError: If method name or version is not registered
 
     Example:
-        >>> get_sparse_method("flash_softmax_skip")  # Latest version
-        >>> get_sparse_method("flash_softmax_skip", "v1")  # Specific version
+        >>> get_sparse_method("flash_skip_softmax")  # Latest version
+        >>> get_sparse_method("flash_skip_softmax", "v1")  # Specific version
     """
     if name not in _SPARSE_ATTENTION_METHODS:
         available = list(_SPARSE_ATTENTION_METHODS.keys())
